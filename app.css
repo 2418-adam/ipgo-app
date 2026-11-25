@@ -29,11 +29,28 @@ button.del { width: 100%; font-size: 18px; padding: 12px; margin-top: 10px; back
 .cam .camon { position: absolute; inset: 0; width: 100%; font-size: 24px; font-weight: bold; color: #fff;
               background: rgba(30,142,62,.92); border-radius: 0; }
 .cam .flash { position: absolute; inset: 0; background: rgba(52,168,83,.55); opacity: 0; transition: opacity .25s; pointer-events: none; }
+.cam .flash.warn { background: rgba(234,134,0,.6); }
 .cam .flash.on { opacity: 1; transition: none; }
+.cam.small { max-height: 27vh; }
+.cam.small .aim { left: 34%; right: 34%; top: 8%; bottom: 8%; }
+.cam .camcount { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 12px; background: rgba(0,0,0,.62); color: #fff;
+                 pointer-events: none; }
+.cam .camcount .n { font-size: 28px; font-weight: bold; line-height: 1.15; }
+.cam .camcount .last { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hint { font-size: 15px; color: #5f6368; margin: 0 4px 10px; }
 
-.item { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 10px;
+.item { background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 10px;
         box-shadow: 0 1px 3px rgba(0,0,0,.12); border-left: 8px solid #1e8e3e; }
+.item .top { display: flex; align-items: center; gap: 10px; }
+.item.dup { background: #fff4e5; }
+.item .qty { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e8eaed; }
+.item .qty .lbl { font-size: 16px; color: #5f6368; flex: none; white-space: nowrap; }
+.item .qty .val { font-size: 24px; font-weight: bold; flex: 1; text-align: center; line-height: 1.2; }
+.item .qty .val .of { font-size: 14px; font-weight: normal; color: #5f6368; }
+.item .qty .step { width: 56px; height: 52px; font-size: 32px; font-weight: bold; line-height: 1; background: #e8f0fe; color: #1967d2;
+                   border: 1px solid #aecbfa; }
+.item .qty .step:active { background: #d2e3fc; }
+.dupwarn { color: #c5221f; font-size: 16px; font-weight: bold; margin-top: 6px; }
 .item.send { border-left-color: #1a73e8; }
 .item.bad { border-left-color: #c5221f; }
 .item.done { border-left-color: #9aa0a6; }
@@ -61,7 +78,7 @@ button.del { width: 100%; font-size: 18px; padding: 12px; margin-top: 10px; back
 .savebar { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
            background: rgba(241,243,244,.96); box-shadow: 0 -2px 6px rgba(0,0,0,.12); z-index: 6; }
 .savebar button.big { margin-top: 0; }
-.toast { position: fixed; left: 12px; right: 12px; top: 74px; z-index: 9; background: #202124; color: #fff; padding: 16px;
+.toast { position: fixed; left: 12px; right: 12px; bottom: calc(100px + env(safe-area-inset-bottom)); z-index: 9; background: #202124; color: #fff; padding: 16px;
          border-radius: 12px; font-size: 19px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
 .toast.ok { background: #137333; }
 .toast.err { background: #c5221f; }
@@ -69,4 +86,24 @@ button.del { width: 100%; font-size: 18px; padding: 12px; margin-top: 10px; back
 .sheet { position: fixed; inset: 0; z-index: 8; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; }
 .sheet .card { width: 100%; margin: 0; border-radius: 18px 18px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom));
                max-height: 92vh; overflow-y: auto; }
+button.back { width: 100%; font-size: 20px; padding: 14px; margin-top: 10px; background: #fff; color: #1a73e8; border: 2px solid #1a73e8; }
+.cfrow { padding: 10px 0; border-bottom: 1px solid #e8eaed; }
+.cfrow.dup { background: #fff4e5; }
+.cfrow .no { font-size: 19px; font-weight: bold; word-break: break-all; }
+.cfrow .what { font-size: 17px; color: #137333; margin-top: 2px; }
+#cf_list { margin-top: 8px; }
+
+.recent { border: 2px solid #1e8e3e; }
+.recent .rchead { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.recent h2 { font-size: 20px; margin: 0; }
+.recent .x { font-size: 20px; padding: 6px 12px; background: #f1f3f4; color: #5f6368; }
+.recent .state { font-size: 17px; font-weight: bold; margin: 8px 0; }
+.recent .state.ok { color: #137333; }
+.recent .state.wait { color: #b06000; }
+.recent .state.undone { color: #1967d2; }
+.rcrow { font-size: 16px; padding: 6px 0; border-bottom: 1px solid #f1f3f4; }
+button.undo { width: 100%; font-size: 20px; font-weight: bold; padding: 14px; margin: 12px 0 6px; background: #fff; color: #c5221f;
+              border: 2px solid #c5221f; }
+button.undo.armed { background: #c5221f; color: #fff; }
+button.undo:disabled { opacity: .5; }
 #todaylist div { padding: 10px 0; border-bottom: 1px solid #e8eaed; font-size: 17px; }

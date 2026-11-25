@@ -40,6 +40,7 @@
     <video id="video" playsinline muted></video>
     <canvas id="canvas" class="hide"></canvas>
     <div class="aim"></div>
+    <div class="camcount hide" id="camcount"><div class="n" id="camn"></div><div class="last" id="camlast"></div></div>
     <button id="camon" class="camon">📷 카메라 켜고 QR 찍기</button>
     <div class="flash" id="flash"></div>
   </div>
@@ -56,6 +57,15 @@
 
   <div id="items"></div>
   <div class="empty" id="empty">아직 찍은 도면이 없어요</div>
+
+  <!-- 방금 저장한 것 (몇 분 동안 되돌리기) -->
+  <div class="card recent hide" id="recent">
+    <div class="rchead"><h2 id="rc_title"></h2><button id="rc_close" class="x" aria-label="닫기">✕</button></div>
+    <div class="state" id="rc_state"></div>
+    <div id="rc_list"></div>
+    <button id="rc_undo" class="undo">되돌리기 (저장 취소)</button>
+    <div class="sub" id="rc_note"></div>
+  </div>
 
   <details class="manual">
     <summary>QR이 안 찍히면 도번을 직접 넣기</summary>
@@ -102,6 +112,17 @@
     <input id="sh_memo" type="text">
     <button id="sh_ok" class="big">확인</button>
     <button id="sh_del" class="del">이 도면 빼기</button>
+  </div>
+</div>
+
+<!-- 저장 전 확인 -->
+<div class="sheet hide" id="confirm">
+  <div class="card">
+    <h2>이대로 저장할까요?</h2>
+    <div class="sub" id="cf_sub"></div>
+    <div id="cf_list"></div>
+    <button id="cf_ok" class="big">이대로 저장</button>
+    <button id="cf_back" class="back">돌아가서 고치기</button>
   </div>
 </div>
 
