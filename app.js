@@ -4,7 +4,7 @@
  * 저장 전에 확인 화면, 저장 뒤 몇 분 동안은 '되돌리기'(서버에서 기록번호로 그 줄을 지움). */
 'use strict';
 
-var VERSION = '2026-11-25.2';
+var VERSION = '2026-11-25.3';
 var API = window.IPGO_API || '';
 var FIX = ['수정', '재작업'];
 var POST_WORKS = ['와이어', '도금', '연마', '열처리', '흑착색', '아노다이징'];
@@ -624,6 +624,7 @@ function logout(why) {
   stopCamera();
   st.pin = ''; put('pin', '');
   show('main', false); show('savebar', false); show('login', true);
+  if (window.dashLeave) dashLeave(true);
   el('loginmsg').textContent = why || '';
   el('who').textContent = '';
   pinOk = false;
@@ -661,6 +662,7 @@ function login() {
 
 function enter() {
   show('login', false); show('today', false); show('main', true);
+  if (window.dashLeave) dashLeave(false);   // 위 [입고]·[현황] 단추 (dash.js)
   el('who').textContent = st.who;
   draw();
   st.items.forEach(function (it) { if (it.d && (it.loading || it.offline)) { it.loading = true; lookup(it); } });
@@ -670,6 +672,7 @@ function enter() {
 function showToday() {
   stopCamera();
   show('main', false); show('savebar', false); show('today', true);
+  if (window.dashLeave) dashLeave(false, true);
   el('todaylist').textContent = '불러오는 중…';
   call('today').then(function (rows) {
     el('todaylist').innerHTML = rows.length ? '' : '오늘 저장한 것이 없어요';

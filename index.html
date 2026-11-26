@@ -17,6 +17,10 @@
   <div class="title">에이앤텍 입고</div>
   <div class="who" id="who"></div>
 </header>
+<nav class="tabs hide" id="tabs">
+  <button id="tab_in" class="on">📷 입고</button>
+  <button id="tab_dash">📊 현황</button>
+</nav>
 
 <!-- 처음 한 번: 비밀번호·이름 -->
 <section id="login" class="hide">
@@ -92,6 +96,33 @@
   </div>
 </section>
 
+<!-- 현황 (dash.js): 회사 PC가 30분마다 만드는 요약 자료 -->
+<section id="dash" class="hide">
+  <div class="dhead">
+    <div class="dleft"><div class="dwhen" id="d_when">자료를 불러오는 중…</div><div class="dstate" id="d_state"></div></div>
+    <button id="d_refresh" class="small">새로 고침</button>
+  </div>
+  <div class="nums" id="d_nums"></div>
+  <div id="d_units"></div>
+  <div class="card">
+    <h3>가공품이 지금 있는 곳</h3>
+    <div id="d_where"></div>
+  </div>
+  <div class="card">
+    <h3>가공품 미입고 <span class="cnt" id="d_opencnt"></span></h3>
+    <input id="d_find" type="search" placeholder="도번·파트명·업체·공정·상태로 찾기">
+    <div id="d_open"></div>
+    <button id="d_more" class="back hide">더 보기</button>
+  </div>
+  <div class="card hide" id="d_latebox">
+    <h3>늦은 구매품</h3>
+    <div id="d_late"></div>
+  </div>
+  <div class="card money" id="d_money"></div>
+  <div class="foot">관리대장·공정_현황.xlsx·폰 입고 스캔·발주서에서 회사 PC가 30분마다 모은 것이에요. 적은 만큼만 정확해요.</div>
+  <div class="spacer"></div>
+</section>
+
 <div class="savebar hide" id="savebar">
   <button id="save" class="big">저장</button>
 </div>
@@ -128,5 +159,6 @@
 
 <script src="config.js"></script>
 <script src="app.js"></script>
+<script src="dash.js"></script>
 </body>
 </html>
