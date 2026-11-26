@@ -161,3 +161,6 @@ table.proc .pk { font-weight: bold; border-radius: 6px; padding: 1px 6px; border
 .num .v small { font-size: 14px; margin-left: 2px; }
 table.proc th, table.proc .pk { white-space: nowrap; }
 #dash .card { scroll-margin-top: 130px; }
+#d_money .links { margin-top: 12px; font-size: 16px; line-height: 1.8; }
+#d_money select { margin: 6px 0 4px; }
+#d_money input { margin-top: 8px; }

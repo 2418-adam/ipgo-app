@@ -2,12 +2,14 @@
  * 회사 PC가 30분마다 만드는 현황_요약.json·현황_돈.json 을 Apps Script(dash 요청)가 비밀번호 확인 뒤 내려준다.
  * - 열면 폰에 담아 둔 마지막 자료를 바로 보여 주고 서버에서 새 자료를 받는다.
  * - 자료가 10분 넘었거나 [새로 고침]이면 회사 PC에 '새로 만들어 달라' 요청을 남기고, 1~2분 동안 새 자료를 기다린다.
- * - 돈 자료는 관리자 비밀번호를 넣은 폰에서만 (서버가 비밀번호가 맞을 때만 내려줌).
+ * - 돈 자료는 관리자(대표·경리) 비밀번호를 넣은 폰에서만 (서버가 이름·비밀번호가 맞을 때만 내려줌).
+ *   비밀번호는 각자 여기서 정하고 바꾼다 (처음·잊었을 때는 등록된 이메일로 인증번호).
  * app.js 의 st·call·get·put·el·show·esc·toast·stopCamera·startCamera·draw 를 쓴다. */
 'use strict';
 
 var D = {
-  tab: 'in', s: get('dash_s', null), m: get('dash_m', null), admin: get('admin', ''),
+  tab: 'in', s: get('dash_s', null), m: get('dash_m', null), admin: get('admin2', null),
+  admins: get('admins', []), pick: '', mode: '', mail: '',
   asked: '', waitUntil: 0, timer: null, busy: false, find: '', shown: 30
 };
 var STALE_MIN = 10;          // 이보다 오래된 자료면 열 때 회사 PC에 새로 요청
@@ -51,7 +53,7 @@ function setTab(tab) {
 /** app.js 가 부름: 로그인 화면(out)·오늘 저장한 것(sub)·입고 화면으로 갈 때 */
 window.dashLeave = function (out, sub) {
   show('tabs', !out && !!st.pin);
-  if (out) { D.s = null; D.m = null; D.admin = ''; put('dash_s', null); put('dash_m', null); put('admin', ''); }
+  if (out) { D.s = null; D.m = null; D.admin = null; D.mode = ''; put('dash_s', null); put('dash_m', null); put('admin2', null); }
   show('dash', false);
   if (!sub) {
     D.tab = 'in';
@@ -97,8 +99,9 @@ function fetchDash(fresh) {
 
 function take(r) {
   if (r.s) { D.s = r.s; put('dash_s', r.s); }
+  if (r.admins) { D.admins = r.admins; put('admins', r.admins); }
   if (r.adminBad) {
-    D.admin = ''; put('admin', ''); D.m = null; put('dash_m', null);
+    D.admin = null; put('admin2', null); D.m = null; put('dash_m', null);
     toast('관리자 비밀번호가 틀려요', 'err');
   } else if (r.m) { D.m = r.m; put('dash_m', r.m); }
 }
@@ -233,22 +236,118 @@ function drawOpen(s) {
   el('d_more').textContent = '더 보기 (' + (rows.length - D.shown) + '장 더)';
 }
 
+// ---------------------------------------------------------------------------
+// 관리자 (대표·경리) — 사람마다 비밀번호를 폰에서 직접 정하고 바꾼다
+//   처음 정하기·잊었을 때: 등록된 이메일로 인증번호 6자리 → 새 비밀번호
+//   바꾸기: 지금 비밀번호 + 새 비밀번호
+// ---------------------------------------------------------------------------
+
+var PW_INPUT = ' type="password" inputmode="numeric" autocomplete="off"';
+
+function pwField(id, ph) { return '<input id="' + id + '"' + PW_INPUT + ' placeholder="' + ph + '">'; }
+
+function newPw() {        // 새 비밀번호 두 칸 확인. 틀리면 알림 후 ''
+  var a = el('d_new1').value.trim(), b = el('d_new2').value.trim();
+  if (!/^[0-9]{6,12}$/.test(a)) { toast('새 비밀번호는 숫자 6~12자리로 해 주세요', 'err'); return ''; }
+  if (a !== b) { toast('새 비밀번호 두 칸이 달라요', 'err'); return ''; }
+  return a;
+}
+
+function busyBtn(id, on) { var b = el(id); if (b) b.disabled = on; }
+
+function askCode(name) {
+  busyBtn('d_codebtn', true);
+  call('adminCode', {n: name}).then(function (r) {
+    D.mode = 'code'; D.mail = r.mail || '';
+    toast((r.mail || '이메일') + '로 인증번호를 보냈어요', 'ok');
+    drawMoney();
+  }, function (e) { busyBtn('d_codebtn', false); toast(e.message, 'err'); });
+}
+
+function setPw(name, req) {
+  busyBtn('d_setbtn', true);
+  req.n = name;
+  call('adminSet', req).then(function () {
+    D.admin = {n: name, p: req.neu}; put('admin2', D.admin);
+    D.mode = ''; D.m = null;
+    toast(req.old ? '관리자 비밀번호를 바꿨어요' : '관리자 비밀번호를 정했어요', 'ok');
+    fetchDash(false);
+    drawMoney();
+  }, function (e) { busyBtn('d_setbtn', false); toast(e.message, 'err'); });
+}
+
+function adminLogin() {
+  var list = D.admins || [];
+  var h = '<h3>돈 (대표·경리만)</h3>';
+  if (!list.length) {
+    return h + '<div class="note">관리자가 아직 등록되지 않았어요. 회사 PC에서 대표·경리의 이름과 이메일을 넣으면, ' +
+        '여기서 각자 비밀번호를 정해 수금·미수·미지급 자료를 볼 수 있어요.</div>';
+  }
+  var pick = list.filter(function (a) { return a.n === D.pick; })[0] || list[0];
+  D.pick = pick.n;
+  h += '<select id="d_who">' + list.map(function (a) {
+    return '<option' + (a.n === pick.n ? ' selected' : '') + '>' + esc(a.n) + '</option>';
+  }).join('') + '</select>';
+  if (D.mode === 'code') {
+    return h + '<div class="note">' + esc(D.mail || '등록된 이메일') + '로 보낸 인증번호 6자리와 새 비밀번호(숫자 6~12자리)를 넣어 주세요.</div>' +
+        '<input id="d_code" inputmode="numeric" autocomplete="one-time-code" placeholder="인증번호 6자리">' +
+        pwField('d_new1', '새 비밀번호') + pwField('d_new2', '새 비밀번호 한 번 더') +
+        '<button id="d_setbtn" class="small">비밀번호 정하기</button>' +
+        '<div class="links"><a href="#" id="d_recode">인증번호 다시 받기</a> · <a href="#" id="d_cancel">취소</a></div>';
+  }
+  if (!pick.set) {
+    return h + '<div class="note">' + esc(pick.n) + '님은 아직 비밀번호를 정하지 않았어요. ' +
+        (pick.mail ? esc(pick.mail) + '로 인증번호를 받아 직접 정해요.' : '회사 PC에서 이메일을 먼저 넣어야 해요.') + '</div>' +
+        (pick.mail ? '<button id="d_codebtn" class="small">이메일로 인증번호 받기</button>' : '');
+  }
+  return h + '<div class="note">비밀번호를 넣으면 이 폰에서 수금·미수·미지급 자료가 보여요.</div>' +
+      pwField('d_admin', esc(pick.n) + ' 관리자 비밀번호') + '<button id="d_adminok" class="small">확인</button>' +
+      '<div class="links"><a href="#" id="d_forgot">비밀번호를 잊었어요 (이메일로 인증번호)</a></div>';
+}
+
+function wireLogin() {
+  var on = function (id, fn) { var x = el(id); if (x) x.onclick = function (e) { e.preventDefault(); fn(); }; };
+  if (el('d_who')) el('d_who').onchange = function () { D.pick = el('d_who').value; D.mode = ''; drawMoney(); };
+  on('d_codebtn', function () { askCode(D.pick); });
+  on('d_forgot', function () { askCode(D.pick); });
+  on('d_recode', function () { askCode(D.pick); });
+  on('d_cancel', function () { D.mode = ''; drawMoney(); });
+  on('d_setbtn', function () {
+    var code = el('d_code').value.trim();
+    if (!/^[0-9]{6}$/.test(code)) { toast('인증번호 6자리를 넣어 주세요', 'err'); return; }
+    var neu = newPw();
+    if (neu) setPw(D.pick, {code: code, neu: neu});
+  });
+  on('d_adminok', function () {
+    var v = el('d_admin').value.trim();
+    if (!v) return;
+    D.admin = {n: D.pick, p: v}; put('admin2', D.admin);
+    fetchDash(false);
+  });
+}
+
 function drawMoney() {
   var box = el('d_money');
   if (!D.admin) {
-    box.innerHTML = '<h3>돈 (대표·경리만)</h3><div class="note">관리자 비밀번호를 넣으면 이 폰에서 수금·미수·미지급 자료가 보여요.</div>' +
-        '<input id="d_admin" type="password" inputmode="numeric" autocomplete="off" placeholder="관리자 비밀번호">' +
-        '<button id="d_adminok" class="small">확인</button>';
-    el('d_adminok').onclick = function () {
-      var v = el('d_admin').value.trim();
-      if (!v) return;
-      D.admin = v; put('admin', v);
-      fetchDash(false);
+    box.innerHTML = adminLogin();
+    wireLogin();
+    return;
+  }
+  if (D.mode === 'change') {
+    box.innerHTML = '<h3>' + esc(D.admin.n) + ' 관리자 비밀번호 바꾸기</h3>' +
+        pwField('d_old', '지금 비밀번호') + pwField('d_new1', '새 비밀번호 (숫자 6~12자리)') + pwField('d_new2', '새 비밀번호 한 번 더') +
+        '<button id="d_setbtn" class="small">바꾸기</button><div class="links"><a href="#" id="d_cancel">취소</a></div>';
+    el('d_cancel').onclick = function (e) { e.preventDefault(); D.mode = ''; drawMoney(); };
+    el('d_setbtn').onclick = function () {
+      var old = el('d_old').value.trim();
+      if (!old) { toast('지금 비밀번호를 넣어 주세요', 'err'); return; }
+      var neu = newPw();
+      if (neu) setPw(D.admin.n, {old: old, neu: neu});
     };
     return;
   }
   var m = D.m;
-  var h = '<h3>돈 (대표·경리만)</h3>';
+  var h = '<h3>돈 (대표·경리만) <span class="sub">' + esc(D.admin.n) + '</span></h3>';
   if (!m) h += '<div class="note">돈 자료를 불러오는 중…</div>';
   else {
     (m['오류'] || []).forEach(function (e) { h += '<div class="note late">' + esc(e) + '</div>'; });
@@ -264,11 +363,12 @@ function drawMoney() {
       if (t['설명']) h += '<div class="note">' + esc(t['설명']) + '</div>';
     });
   }
-  h += '<div style="margin-top:12px"><a href="#" id="d_adminout">이 폰에서 관리자 비밀번호 지우기</a></div>';
+  h += '<div class="links"><a href="#" id="d_change">비밀번호 바꾸기</a> · <a href="#" id="d_adminout">이 폰에서 관리자 비밀번호 지우기</a></div>';
   box.innerHTML = h;
+  el('d_change').onclick = function (e) { e.preventDefault(); D.mode = 'change'; drawMoney(); };
   el('d_adminout').onclick = function (e) {
     e.preventDefault();
-    D.admin = ''; D.m = null; put('admin', ''); put('dash_m', null);
+    D.admin = null; D.m = null; put('admin2', null); put('dash_m', null);
     drawMoney();
   };
 }
@@ -276,6 +376,7 @@ function drawMoney() {
 // ---------------------------------------------------------------------------
 
 (function () {
+  try { localStorage.removeItem('ipgo_admin'); } catch (e) { /* 예전(11-25)의 공용 관리자 비밀번호 — 이제 안 씀 */ }
   el('tab_in').onclick = function () { if (D.tab !== 'in') setTab('in'); };
   el('tab_dash').onclick = function () { if (D.tab !== 'dash') setTab('dash'); };
   el('d_refresh').onclick = function () { fetchDash(true); };
